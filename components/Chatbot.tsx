@@ -26,18 +26,6 @@ const Chatbot: React.FC = () => {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const isMedicalQuery = (input: string): boolean => {
-    const medicalKeywords = [
-      'symptom', 'pain', 'fever', 'cough', 'headache', 'stomach', 'nausea', 'vomit', 'diarrhea',
-      'medicine', 'drug', 'prescription', 'treatment', 'diagnosis', 'doctor', 'hospital',
-      'illness', 'disease', 'infection', 'allergy', 'rash', 'sore', 'throat', 'chest',
-      'back', 'joint', 'muscle', 'bone', 'skin', 'eye', 'ear', 'nose', 'mouth', 'tooth',
-      'blood', 'pressure', 'sugar', 'cholesterol', 'weight', 'diet', 'exercise', 'health'
-    ]
-    const lowerInput = input.toLowerCase()
-    return medicalKeywords.some(keyword => lowerInput.includes(keyword))
-  }
-
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
 
@@ -54,33 +42,34 @@ const Chatbot: React.FC = () => {
     setIsLoading(true)
 
     try {
-      // Check if it's a medical query
-      const isMedical = isMedicalQuery(userInput)
+      // Call the chat API for all queries
+      // We send the conversation history to give the AI context
+      const conversationHistory = messages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      }));
 
-      if (isMedical) {
-        // Call the assistant API
-        const response = await axios.post('/api/assistant', { transcript: userInput })
-        const data = response.data
-        const botText = data.data?.replyText || 'Sorry, I couldn\'t process your medical query.'
-        // Format the response to display numbered/bulleted points on new lines
-        const formattedText = formatBotResponse(botText)
-        const botResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: formattedText,
-          sender: 'bot',
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, botResponse])
-      } else {
-        // Use the existing logic for non-medical queries
-        const botResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: getBotResponse(userInput),
-          sender: 'bot',
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, botResponse])
+      // Add the new user message
+      conversationHistory.push({
+        role: 'user',
+        content: userInput
+      });
+
+      const response = await axios.post('/api/chat', {
+        messages: conversationHistory,
+        doctorPrompt: "You are a helpful AI assistant for the 'AI Healthsphere' app. You help users navigate the app, find their reports, and understand how to use the features. You can also answer general medical questions."
+      })
+
+      const botText = response.data.content || 'Sorry, I couldn\'t process your request.'
+
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: botText,
+        sender: 'bot',
+        timestamp: new Date()
       }
+      setMessages(prev => [...prev, botResponse])
+
     } catch (error) {
       console.error('Error getting bot response:', error)
       const errorResponse: Message = {
@@ -92,34 +81,6 @@ const Chatbot: React.FC = () => {
       setMessages(prev => [...prev, errorResponse])
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const formatBotResponse = (text: string): string => {
-    // Split by numbered lists (1., 2., etc.) or bullet points
-    const lines = text.split(/\n/)
-    const formattedLines = lines.map(line => {
-      // Check if line starts with number or bullet
-      if (/^\d+\./.test(line.trim()) || /^[-•*]/.test(line.trim())) {
-        return line.trim()
-      }
-      return line
-    })
-    return formattedLines.join('\n')
-  }
-
-  const getBotResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase()
-    if (/\b(hello|hi)\b/i.test(input)) {
-      return 'Hello! Welcome to Doctor.ai. How can I assist you?'
-    } else if (/\b(help|support)\b/i.test(input)) {
-      return 'I can help you with information about our medical services, booking appointments, or general health questions. What would you like to know?'
-    } else if (/\b(appointment|book)\b/i.test(input)) {
-      return 'To book an appointment, please visit our dashboard and start a medical consultation. Would you like me to guide you there?'
-    } else if (/\b(symptom|sick)\b/i.test(input)) {
-      return 'For medical advice, please use our AI Medical Agent in the dashboard. It can provide personalized consultations.'
-    } else {
-      return 'I\'m here to help! For medical consultations, please use our AI Medical Agent. For other inquiries, feel free to ask.'
     }
   }
 
@@ -161,11 +122,10 @@ const Chatbot: React.FC = () => {
                     className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] p-3 rounded-lg text-sm ${
-                        message.sender === 'user'
+                      className={`max-w-[80%] p-3 rounded-lg text-sm ${message.sender === 'user'
                           ? 'bg-blue-500 text-white'
                           : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border'
-                      }`}
+                        }`}
                     >
                       {message.text}
                     </div>

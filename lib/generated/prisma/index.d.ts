@@ -40,7 +40,7 @@ export type Session = $Result.DefaultSelection<Prisma.$SessionPayload>
  */
 export class PrismaClient<
   ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
-  U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  const U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
   ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
 > {
   [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
@@ -72,13 +72,6 @@ export class PrismaClient<
    * Disconnect from the database
    */
   $disconnect(): $Utils.JsPromise<void>;
-
-  /**
-   * Add a middleware
-   * @deprecated since 4.16.0. For new code, prefer client extensions instead.
-   * @see https://pris.ly/d/extensions
-   */
-  $use(cb: Prisma.Middleware): void
 
 /**
    * Executes a prepared raw query and returns the number of affected rows.
@@ -226,8 +219,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.10.1
-   * Query Engine version: 9b628578b3b7cae625e8c927178f15a170e74a9c
+   * Prisma Client JS version: 6.19.0
+   * Query Engine version: 2ba551f319ab1df4bc874a89965d8b3641056773
    */
   export type PrismaVersion = {
     client: string
@@ -240,6 +233,7 @@ export namespace Prisma {
    */
 
 
+  export import Bytes = runtime.Bytes
   export import JsonObject = runtime.JsonObject
   export import JsonArray = runtime.JsonArray
   export import JsonValue = runtime.JsonValue
@@ -823,16 +817,24 @@ export namespace Prisma {
     /**
      * @example
      * ```
-     * // Defaults to stdout
+     * // Shorthand for `emit: 'stdout'`
      * log: ['query', 'info', 'warn', 'error']
      * 
-     * // Emit as events
+     * // Emit as events only
      * log: [
-     *   { emit: 'stdout', level: 'query' },
-     *   { emit: 'stdout', level: 'info' },
-     *   { emit: 'stdout', level: 'warn' }
-     *   { emit: 'stdout', level: 'error' }
+     *   { emit: 'event', level: 'query' },
+     *   { emit: 'event', level: 'info' },
+     *   { emit: 'event', level: 'warn' }
+     *   { emit: 'event', level: 'error' }
      * ]
+     * 
+     * / Emit as events and log to stdout
+     * og: [
+     *  { emit: 'stdout', level: 'query' },
+     *  { emit: 'stdout', level: 'info' },
+     *  { emit: 'stdout', level: 'warn' }
+     *  { emit: 'stdout', level: 'error' }
+     * 
      * ```
      * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
@@ -847,6 +849,10 @@ export namespace Prisma {
       timeout?: number
       isolationLevel?: Prisma.TransactionIsolationLevel
     }
+    /**
+     * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-planetscale`
+     */
+    adapter?: runtime.SqlDriverAdapterFactory | null
     /**
      * Global configuration for omitting model fields by default.
      * 
@@ -875,10 +881,15 @@ export namespace Prisma {
     emit: 'stdout' | 'event'
   }
 
-  export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition ? T['emit'] extends 'event' ? T['level'] : never : never
-  export type GetEvents<T extends any> = T extends Array<LogLevel | LogDefinition> ?
-    GetLogType<T[0]> | GetLogType<T[1]> | GetLogType<T[2]> | GetLogType<T[3]>
-    : never
+  export type CheckIsLogLevel<T> = T extends LogLevel ? T : never;
+
+  export type GetLogType<T> = CheckIsLogLevel<
+    T extends LogDefinition ? T['level'] : T
+  >;
+
+  export type GetEvents<T extends any[]> = T extends Array<LogLevel | LogDefinition>
+    ? GetLogType<T[number]>
+    : never;
 
   export type QueryEvent = {
     timestamp: Date
@@ -918,25 +929,6 @@ export namespace Prisma {
     | 'runCommandRaw'
     | 'findRaw'
     | 'groupBy'
-
-  /**
-   * These options are being passed into the middleware as "params"
-   */
-  export type MiddlewareParams = {
-    model?: ModelName
-    action: PrismaAction
-    args: any
-    dataPath: string[]
-    runInTransaction: boolean
-  }
-
-  /**
-   * The `T` type makes sure, that the `return proceed` is not forgotten in the middleware implementation
-   */
-  export type Middleware<T = any> = (
-    params: MiddlewareParams,
-    next: (params: MiddlewareParams) => $Utils.JsPromise<T>,
-  ) => $Utils.JsPromise<T>
 
   // tested in getLogLevel.test.ts
   export function getLogLevel(log: Array<LogLevel | LogDefinition>): LogLevel | undefined;
@@ -2004,7 +1996,7 @@ export namespace Prisma {
     id: number | null
     sessionId: string | null
     notes: string | null
-    reportPdf: Uint8Array | null
+    reportPdf: Bytes | null
     reportPdfName: string | null
     createdBy: string | null
     createdOn: string | null
@@ -2014,7 +2006,7 @@ export namespace Prisma {
     id: number | null
     sessionId: string | null
     notes: string | null
-    reportPdf: Uint8Array | null
+    reportPdf: Bytes | null
     reportPdfName: string | null
     createdBy: string | null
     createdOn: string | null
@@ -2170,7 +2162,7 @@ export namespace Prisma {
     selectedDocter: JsonValue | null
     conversation: JsonValue | null
     report: JsonValue | null
-    reportPdf: Uint8Array | null
+    reportPdf: Bytes | null
     reportPdfName: string | null
     createdBy: string
     createdOn: string
@@ -2264,7 +2256,7 @@ export namespace Prisma {
        *    * Optional PDF bytes stored for the generated medical report.
        *    * Stored as Bytes in the database so we can serve the PDF directly.
        */
-      reportPdf: Uint8Array | null
+      reportPdf: Prisma.Bytes | null
       reportPdfName: string | null
       createdBy: string
       createdOn: string
@@ -3285,7 +3277,7 @@ export namespace Prisma {
     selectedDocter?: JsonNullableFilter<"Session">
     conversation?: JsonNullableFilter<"Session">
     report?: JsonNullableFilter<"Session">
-    reportPdf?: BytesNullableFilter<"Session"> | Uint8Array | null
+    reportPdf?: BytesNullableFilter<"Session"> | Bytes | null
     reportPdfName?: StringNullableFilter<"Session"> | string | null
     createdBy?: StringFilter<"Session"> | string
     createdOn?: StringFilter<"Session"> | string
@@ -3314,7 +3306,7 @@ export namespace Prisma {
     selectedDocter?: JsonNullableFilter<"Session">
     conversation?: JsonNullableFilter<"Session">
     report?: JsonNullableFilter<"Session">
-    reportPdf?: BytesNullableFilter<"Session"> | Uint8Array | null
+    reportPdf?: BytesNullableFilter<"Session"> | Bytes | null
     reportPdfName?: StringNullableFilter<"Session"> | string | null
     createdBy?: StringFilter<"Session"> | string
     createdOn?: StringFilter<"Session"> | string
@@ -3348,7 +3340,7 @@ export namespace Prisma {
     selectedDocter?: JsonNullableWithAggregatesFilter<"Session">
     conversation?: JsonNullableWithAggregatesFilter<"Session">
     report?: JsonNullableWithAggregatesFilter<"Session">
-    reportPdf?: BytesNullableWithAggregatesFilter<"Session"> | Uint8Array | null
+    reportPdf?: BytesNullableWithAggregatesFilter<"Session"> | Bytes | null
     reportPdfName?: StringNullableWithAggregatesFilter<"Session"> | string | null
     createdBy?: StringWithAggregatesFilter<"Session"> | string
     createdOn?: StringWithAggregatesFilter<"Session"> | string
@@ -3406,7 +3398,7 @@ export namespace Prisma {
     selectedDocter?: NullableJsonNullValueInput | InputJsonValue
     conversation?: NullableJsonNullValueInput | InputJsonValue
     report?: NullableJsonNullValueInput | InputJsonValue
-    reportPdf?: Uint8Array | null
+    reportPdf?: Bytes | null
     reportPdfName?: string | null
     createdBy: string
     createdOn: string
@@ -3419,7 +3411,7 @@ export namespace Prisma {
     selectedDocter?: NullableJsonNullValueInput | InputJsonValue
     conversation?: NullableJsonNullValueInput | InputJsonValue
     report?: NullableJsonNullValueInput | InputJsonValue
-    reportPdf?: Uint8Array | null
+    reportPdf?: Bytes | null
     reportPdfName?: string | null
     createdBy: string
     createdOn: string
@@ -3431,7 +3423,7 @@ export namespace Prisma {
     selectedDocter?: NullableJsonNullValueInput | InputJsonValue
     conversation?: NullableJsonNullValueInput | InputJsonValue
     report?: NullableJsonNullValueInput | InputJsonValue
-    reportPdf?: NullableBytesFieldUpdateOperationsInput | Uint8Array | null
+    reportPdf?: NullableBytesFieldUpdateOperationsInput | Bytes | null
     reportPdfName?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: StringFieldUpdateOperationsInput | string
     createdOn?: StringFieldUpdateOperationsInput | string
@@ -3444,7 +3436,7 @@ export namespace Prisma {
     selectedDocter?: NullableJsonNullValueInput | InputJsonValue
     conversation?: NullableJsonNullValueInput | InputJsonValue
     report?: NullableJsonNullValueInput | InputJsonValue
-    reportPdf?: NullableBytesFieldUpdateOperationsInput | Uint8Array | null
+    reportPdf?: NullableBytesFieldUpdateOperationsInput | Bytes | null
     reportPdfName?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: StringFieldUpdateOperationsInput | string
     createdOn?: StringFieldUpdateOperationsInput | string
@@ -3457,7 +3449,7 @@ export namespace Prisma {
     selectedDocter?: NullableJsonNullValueInput | InputJsonValue
     conversation?: NullableJsonNullValueInput | InputJsonValue
     report?: NullableJsonNullValueInput | InputJsonValue
-    reportPdf?: Uint8Array | null
+    reportPdf?: Bytes | null
     reportPdfName?: string | null
     createdBy: string
     createdOn: string
@@ -3469,7 +3461,7 @@ export namespace Prisma {
     selectedDocter?: NullableJsonNullValueInput | InputJsonValue
     conversation?: NullableJsonNullValueInput | InputJsonValue
     report?: NullableJsonNullValueInput | InputJsonValue
-    reportPdf?: NullableBytesFieldUpdateOperationsInput | Uint8Array | null
+    reportPdf?: NullableBytesFieldUpdateOperationsInput | Bytes | null
     reportPdfName?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: StringFieldUpdateOperationsInput | string
     createdOn?: StringFieldUpdateOperationsInput | string
@@ -3482,7 +3474,7 @@ export namespace Prisma {
     selectedDocter?: NullableJsonNullValueInput | InputJsonValue
     conversation?: NullableJsonNullValueInput | InputJsonValue
     report?: NullableJsonNullValueInput | InputJsonValue
-    reportPdf?: NullableBytesFieldUpdateOperationsInput | Uint8Array | null
+    reportPdf?: NullableBytesFieldUpdateOperationsInput | Bytes | null
     reportPdfName?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: StringFieldUpdateOperationsInput | string
     createdOn?: StringFieldUpdateOperationsInput | string
@@ -3603,10 +3595,10 @@ export namespace Prisma {
   }
 
   export type BytesNullableFilter<$PrismaModel = never> = {
-    equals?: Uint8Array | BytesFieldRefInput<$PrismaModel> | null
-    in?: Uint8Array[] | ListBytesFieldRefInput<$PrismaModel> | null
-    notIn?: Uint8Array[] | ListBytesFieldRefInput<$PrismaModel> | null
-    not?: NestedBytesNullableFilter<$PrismaModel> | Uint8Array | null
+    equals?: Bytes | BytesFieldRefInput<$PrismaModel> | null
+    in?: Bytes[] | ListBytesFieldRefInput<$PrismaModel> | null
+    notIn?: Bytes[] | ListBytesFieldRefInput<$PrismaModel> | null
+    not?: NestedBytesNullableFilter<$PrismaModel> | Bytes | null
   }
 
   export type StringNullableFilter<$PrismaModel = never> = {
@@ -3697,10 +3689,10 @@ export namespace Prisma {
   }
 
   export type BytesNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Uint8Array | BytesFieldRefInput<$PrismaModel> | null
-    in?: Uint8Array[] | ListBytesFieldRefInput<$PrismaModel> | null
-    notIn?: Uint8Array[] | ListBytesFieldRefInput<$PrismaModel> | null
-    not?: NestedBytesNullableWithAggregatesFilter<$PrismaModel> | Uint8Array | null
+    equals?: Bytes | BytesFieldRefInput<$PrismaModel> | null
+    in?: Bytes[] | ListBytesFieldRefInput<$PrismaModel> | null
+    notIn?: Bytes[] | ListBytesFieldRefInput<$PrismaModel> | null
+    not?: NestedBytesNullableWithAggregatesFilter<$PrismaModel> | Bytes | null
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedBytesNullableFilter<$PrismaModel>
     _max?: NestedBytesNullableFilter<$PrismaModel>
@@ -3737,7 +3729,7 @@ export namespace Prisma {
   }
 
   export type NullableBytesFieldUpdateOperationsInput = {
-    set?: Uint8Array | null
+    set?: Bytes | null
   }
 
   export type NullableStringFieldUpdateOperationsInput = {
@@ -3814,10 +3806,10 @@ export namespace Prisma {
   }
 
   export type NestedBytesNullableFilter<$PrismaModel = never> = {
-    equals?: Uint8Array | BytesFieldRefInput<$PrismaModel> | null
-    in?: Uint8Array[] | ListBytesFieldRefInput<$PrismaModel> | null
-    notIn?: Uint8Array[] | ListBytesFieldRefInput<$PrismaModel> | null
-    not?: NestedBytesNullableFilter<$PrismaModel> | Uint8Array | null
+    equals?: Bytes | BytesFieldRefInput<$PrismaModel> | null
+    in?: Bytes[] | ListBytesFieldRefInput<$PrismaModel> | null
+    notIn?: Bytes[] | ListBytesFieldRefInput<$PrismaModel> | null
+    not?: NestedBytesNullableFilter<$PrismaModel> | Bytes | null
   }
 
   export type NestedStringNullableFilter<$PrismaModel = never> = {
@@ -3869,10 +3861,10 @@ export namespace Prisma {
   }
 
   export type NestedBytesNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Uint8Array | BytesFieldRefInput<$PrismaModel> | null
-    in?: Uint8Array[] | ListBytesFieldRefInput<$PrismaModel> | null
-    notIn?: Uint8Array[] | ListBytesFieldRefInput<$PrismaModel> | null
-    not?: NestedBytesNullableWithAggregatesFilter<$PrismaModel> | Uint8Array | null
+    equals?: Bytes | BytesFieldRefInput<$PrismaModel> | null
+    in?: Bytes[] | ListBytesFieldRefInput<$PrismaModel> | null
+    notIn?: Bytes[] | ListBytesFieldRefInput<$PrismaModel> | null
+    not?: NestedBytesNullableWithAggregatesFilter<$PrismaModel> | Bytes | null
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedBytesNullableFilter<$PrismaModel>
     _max?: NestedBytesNullableFilter<$PrismaModel>

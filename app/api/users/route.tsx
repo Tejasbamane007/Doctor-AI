@@ -1,27 +1,4 @@
 import { NextResponse } from "next/server";
-<<<<<<< HEAD
-import { PrismaClient } from "@/lib/generated/prisma";
-import { currentUser } from "@clerk/nextjs/server";
-
-declare global {
-  var prisma: PrismaClient | undefined;
-}
-
-
-let prisma: PrismaClient;
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
-} else {
-
-  if (!global.prisma) {
-    global.prisma = new PrismaClient();
-  }
-  prisma = global.prisma;
-}
-
-export async function POST() {
-=======
 import { prisma, prismaAvailable } from '@/lib/prismaClient'
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -29,7 +6,6 @@ export async function POST() {
   if (!prismaAvailable || !prisma) {
     return NextResponse.json({ error: 'Database not configured' }, { status: 503 })
   }
->>>>>>> 0a74951a08b525410bbc5b77e68a3dc7761227fa
   try {
     const user = await currentUser();
 
@@ -71,7 +47,7 @@ export async function POST() {
     } catch (dbError) {
       console.error("Database error:", dbError);
 
-      
+
       return NextResponse.json({
         id: 0,
         email: userEmail,

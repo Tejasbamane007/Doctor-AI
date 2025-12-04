@@ -1,26 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from 'uuid';
-<<<<<<< HEAD
-import { PrismaClient } from "@/lib/generated/prisma";
-import { currentUser } from "@clerk/nextjs/server";
-
-declare global {
-  var prisma: PrismaClient | undefined;
-}
-
-let prisma: PrismaClient;
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
-} else {
-  if (!global.prisma) {
-    global.prisma = new PrismaClient();
-  }
-  prisma = global.prisma;
-}
-
-export async function POST(request: NextRequest) {
-=======
 import { prisma, prismaAvailable } from '@/lib/prismaClient'
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -28,7 +7,6 @@ export async function POST(request: NextRequest) {
   if (!prismaAvailable || !prisma) {
     return NextResponse.json({ error: 'Database not configured', details: 'PrismaClient failed to initialize' }, { status: 503 })
   }
->>>>>>> 0a74951a08b525410bbc5b77e68a3dc7761227fa
   const user = await currentUser();
   const { notes, selectedDoctor } = await request.json();
 
@@ -52,9 +30,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-<<<<<<< HEAD
+  if (!prismaAvailable || !prisma) {
+    return NextResponse.json({ error: 'Database not configured', details: 'PrismaClient failed to initialize' }, { status: 503 })
+  }
   try {
-
     const { searchParams } = new URL(request.url)
     const sessionId = searchParams.get('sessionId')
 
@@ -103,44 +82,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(safeSessions)
 
-    // NOTE: code path unreachable because the response above returns earlier
-=======
-  if (!prismaAvailable || !prisma) {
-    return NextResponse.json({ error: 'Database not configured', details: 'PrismaClient failed to initialize' }, { status: 503 })
-  }
-  try {
-    const { searchParams } = new URL(request.url)
-    const sessionId = searchParams.get('sessionId')
-
-    if (!sessionId) {
-      return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
-    }
-
-    const user = await currentUser()
-    const userEmail = user?.emailAddresses[0]?.emailAddress || 'unknown';
-
-    const result = await prisma.session.findFirst({
-      where: {
-        sessionId: sessionId,
-          
-        ...(userEmail !== 'unknown' ? { createdBy: userEmail } : {})
-      },
-    })
-
-    if (!result) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(result)
->>>>>>> 0a74951a08b525410bbc5b77e68a3dc7761227fa
   } catch (error) {
     console.error("Error fetching session:", error);
     return NextResponse.json({ error: "Failed to fetch session" }, { status: 500 });
   }
-<<<<<<< HEAD
 }
 
 export async function PUT(request: NextRequest) {
+  if (!prismaAvailable || !prisma) {
+    return NextResponse.json({ error: 'Database not configured', details: 'PrismaClient failed to initialize' }, { status: 503 })
+  }
   try {
     const { sessionId, conversation, report } = await request.json()
 
@@ -175,6 +126,3 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update session" }, { status: 500 });
   }
 }
-=======
-}
->>>>>>> 0a74951a08b525410bbc5b77e68a3dc7761227fa

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Structured Medical Consultation Flow Implementation
 
 ## Completed Tasks
@@ -11,12 +10,10 @@
 - [x] Update Response Handling: Modify AI responses to follow structured flow instead of free conversation
 - [x] Data Persistence: Ensure all phase data is saved to database for report generation
 - [x] Error Handling: Add handling for incomplete phases or user interruptions
-
-## Completed Tasks (Continued)
 - [x] Test Complete Flow: Development server running successfully
 - [x] Verify Report Generation: Structured data collection implemented for reports
 - [x] Voice Interaction Testing: Voice flow integrated with structured phases
-=======
+
 # TODO: Fix Conversation Glitch and Improve PDF Generation
 
 ## Pending Tasks
@@ -29,5 +26,3 @@
 - [ ] Test conversation flow for no repeats
 - [ ] Test PDF generation with professional format and new filename
 - [ ] Verify logo inclusion and report structure
-e
->>>>>>> 0a74951a08b525410bbc5b77e68a3dc7761227fa

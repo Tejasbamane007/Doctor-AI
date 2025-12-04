@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 "use client"
 import React, { useRef } from 'react'
 import { Button } from '@/components/ui/button'
@@ -278,7 +277,3 @@ Please consult with a healthcare professional for final diagnosis and treatment.
 }
 
 export default MedicalReport
-=======
-
-
->>>>>>> 0a74951a08b525410bbc5b77e68a3dc7761227fa
