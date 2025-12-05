@@ -101,6 +101,3 @@ If you encounter issues with the voice conversation functionality:
    - Try speaking louder or moving closer to your microphone
    - Check if your browser's console shows any WebSocket errors
 
-## License
-
-[MIT](LICENSE)
